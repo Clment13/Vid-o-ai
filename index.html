@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Générateur Vidéo IA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --success: #10b981;
+    --error: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(124,58,237,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(6,182,212,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 700px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #e2e8f0 0%, #7c3aed 50%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .api-input-group {
+    display: flex;
+    gap: 10px;
+  }
+
+  input[type="text"], input[type="password"], textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, textarea:focus { border-color: var(--accent); }
+
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: #6d28d9; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-full {
+    width: 100%;
+    padding: 16px;
+    font-size: 15px;
+    margin-top: 20px;
+    background: linear-gradient(135deg, var(--accent), #4f46e5);
+  }
+
+  .btn-full:hover { background: linear-gradient(135deg, #6d28d9, #4338ca); }
+
+  .api-status {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    margin-top: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(16,185,129,0.1);
+    color: var(--success);
+  }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 16px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  select:focus { border-color: var(--accent); }
+
+  #status-zone {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-text { font-size: 13px; color: var(--muted); }
+
+  #result-zone {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  #result-zone video {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    background: #000;
+  }
+
+  .result-actions { display: flex; gap: 10px; }
+
+  .btn-dl {
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+  }
+
+  .btn-dl:hover { background: #059669; }
+
+  .btn-new {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-new:hover { color: var(--text); border-color: var(--muted); }
+
+  #error-zone {
+    display: none;
+    background: rgba(239,68,68,0.05);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 10px;
+    padding: 16px;
+    color: var(--error);
+    font-size: 13px;
+    margin-top: 16px;
+  }
+
+  .history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .history-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .history-item video { width: 100%; height: 100%; object-fit: cover; }
+  .history-item:hover video { opacity: 0.8; }
+
+  .empty-history {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 24px;
+    opacity: 0.5;
+  }
+
+  .info-box {
+    background: rgba(6,182,212,0.05);
+    border: 1px solid rgba(6,182,212,0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: var(--accent2);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    opacity: 0.4;
+    margin-top: 24px;
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="logo">⬡ Studio Privé</div>
+    <h1>Générateur<br>Vidéo IA</h1>
+    <p class="subtitle">Powered by fal.ai · Usage personnel</p>
+  </header>
+
+  <!-- Clé API -->
+  <div class="card">
+    <div class="card-title">🔑 Clé API fal.ai</div>
+    <div class="info-box">
+      Crée ton compte sur <strong>fal.ai</strong> → Dashboard → API Keys → Create key.<br>
+      Tu reçois <strong>$10 de crédits gratuits</strong> à l'inscription.
+    </div>
+    <div class="api-input-group">
+      <input type="password" id="api-key" placeholder="fal_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+      <button class="btn" onclick="saveKey()">Sauvegarder</button>
+    </div>
+    <div class="api-status" id="key-status">
+      <div class="dot"></div> Clé sauvegardée
+    </div>
+  </div>
+
+  <!-- Formulaire -->
+  <div class="card">
+    <div class="card-title">🎬 Créer une vidéo</div>
+
+    <label>Décris ta vidéo</label>
+    <textarea id="prompt" placeholder="Ex: Un chat orange qui court dans un champ de blé au coucher du soleil, style cinématique, ralenti..."></textarea>
+
+    <div class="options-grid" style="margin-top:16px;">
+      <div>
+        <label>Modèle</label>
+        <select id="model">
+          <option value="fal-ai/wan/v2.1/1.3b/text-to-video">Wan 2.1 · Rapide (~$0.05/s)</option>
+          <option value="fal-ai/kling-video/v1.6/standard/text-to-video">Kling 1.6 · Qualité</option>
+          <option value="fal-ai/pixverse/v4.5/text-to-video">PixVerse v4 · Stylisé</option>
+        </select>
+      </div>
+      <div>
+        <label>Durée</label>
+        <select id="duration">
+          <option value="5">5 secondes</option>
+          <option value="10">10 secondes</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-full" id="gen-btn" onclick="generate()">⚡ Générer la vidéo</button>
+    <div id="error-zone"></div>
+  </div>
+
+  <!-- Statut -->
+  <div id="status-zone">
+    <div class="spinner"></div>
+    <div class="status-text" id="status-text">Envoi de la requête...</div>
+  </div>
+
+  <!-- Résultat -->
+  <div id="result-zone">
+    <video id="result-video" controls autoplay loop></video>
+    <div class="result-actions">
+      <a class="btn-dl" id="dl-btn" download="video-ia.mp4">⬇ Télécharger</a>
+      <button class="btn-new" onclick="reset()">+ Nouvelle vidéo</button>
+    </div>
+  </div>
+
+  <!-- Historique -->
+  <div class="card">
+    <div class="card-title">📁 Historique de session</div>
+    <div class="history-grid" id="history-grid">
+      <div class="empty-history">Aucune vidéo générée pour l'instant</div>
+    </div>
+  </div>
+
+  <footer>Usage personnel · Tes vidéos restent privées</footer>
+
+</div>
+
+<script>
+  window.onload = () => {
+    const saved = localStorage.getItem('fal_key');
+    if (saved) {
+      document.getElementById('api-key').value = saved;
+      document.getElementById('key-status').style.display = 'inline-flex';
+    }
+  };
+
+  function saveKey() {
+    const key = document.getElementById('api-key').value.trim();
+    if (!key) { showError('Entre ta clé API fal.ai.'); return; }
+    localStorage.setItem('fal_key', key);
+    document.getElementById('key-status').style.display = 'inline-flex';
+    hideError();
+  }
+
+  function getKey() {
+    return localStorage.getItem('fal_key') || document.getElementById('api-key').value.trim();
+  }
+
+  async function generate() {
+    hideError();
+    const key = getKey();
+    if (!key) { showError('Entre d\'abord ta clé API fal.ai.'); return; }
+
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { showError('Écris une description pour ta vidéo.'); return; }
+
+    const modelId = document.getElementById('model').value;
+    const duration = parseInt(document.getElementById('duration').value);
+
+    document.getElementById('gen-btn').disabled = true;
+    showStatus('Envoi de la requête à fal.ai...');
+
+    try {
+      // Soumettre la requête
+      const submitRes = await fetch(`https://queue.fal.run/${modelId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          duration: duration,
+          aspect_ratio: "16:9"
+        })
+      });
+
+      if (!submitRes.ok) {
+        const err = await submitRes.json();
+        throw new Error(err.detail || err.message || `Erreur API (${submitRes.status})`);
+      }
+
+      const submission = await submitRes.json();
+      const requestId = submission.request_id;
+
+      if (!requestId) throw new Error('Pas de request_id reçu');
+
+      pollFal(modelId, requestId, key, prompt);
+
+    } catch (e) {
+      showError('Erreur : ' + e.message);
+      document.getElementById('gen-btn').disabled = false;
+      hideStatus();
+    }
+  }
+
+  async function pollFal(modelId, requestId, key, prompt) {
+    const messages = [
+      'Initialisation du modèle IA...',
+      'Génération des frames...',
+      'Rendu vidéo en cours...',
+      'Finalisation...'
+    ];
+    let msgIndex = 0;
+    let tick = 0;
+
+    const interval = setInterval(async () => {
+      tick++;
+      if (tick % 5 === 0) msgIndex = Math.min(msgIndex + 1, messages.length - 1);
+      document.getElementById('status-text').textContent = messages[msgIndex] + ' ' + '⬛'.repeat((tick % 3) + 1);
+
+      try {
+        const res = await fetch(`https://queue.fal.run/${modelId}/requests/${requestId}/status`, {
+          headers: { 'Authorization': `Key ${key}` }
+        });
+        const data = await res.json();
+
+        if (data.status === 'COMPLETED') {
+          clearInterval(interval);
+          // Récupérer le résultat
+          const resultRes = await fetch(`https://queue.fal.run/${modelId}/requests/${requestId}`, {
+            headers: { 'Authorization': `Key ${key}` }
+          });
+          const result = await resultRes.json();
+          const url = result?.video?.url || result?.output?.video?.url || (Array.isArray(result?.video) ? result.video[0]?.url : null);
+          if (!url) throw new Error('URL vidéo introuvable dans la réponse');
+          showResult(url, prompt);
+        } else if (data.status === 'FAILED') {
+          clearInterval(interval);
+          throw new Error(data.error || 'Génération échouée');
+        }
+      } catch (e) {
+        if (e.message.includes('échouée') || e.message.includes('introuvable')) {
+          clearInterval(interval);
+          showError('Erreur : ' + e.message);
+          hideStatus();
+          document.getElementById('gen-btn').disabled = false;
+        }
+        // sinon on continue à poller
+      }
+    }, 3000);
+  }
+
+  function showResult(url, prompt) {
+    hideStatus();
+    const video = document.getElementById('result-video');
+    video.src = url;
+    document.getElementById('dl-btn').href = url;
+    document.getElementById('result-zone').style.display = 'block';
+    document.getElementById('gen-btn').disabled = false;
+    addToHistory(url);
+  }
+
+  function addToHistory(url) {
+    const grid = document.getElementById('history-grid');
+    if (grid.querySelector('.empty-history')) grid.innerHTML = '';
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<video src="${url}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()"></video>`;
+    item.onclick = () => {
+      document.getElementById('result-video').src = url;
+      document.getElementById('dl-btn').href = url;
+      document.getElementById('result-zone').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    grid.prepend(item);
+  }
+
+  function reset() {
+    document.getElementById('result-zone').style.display = 'none';
+    document.getElementById('prompt').value = '';
+    document.getElementById('prompt').focus();
+  }
+
+  function showStatus(msg) {
+    document.getElementById('status-text').textContent = msg;
+    document.getElementById('status-zone').style.display = 'block';
+    document.getElementById('result-zone').style.display = 'none';
+  }
+
+  function hideStatus() {
+    document.getElementById('status-zone').style.display = 'none';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-zone');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('error-zone').style.display = 'none';
+  }
+</script>
+</body>
+</html>
